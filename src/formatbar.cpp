@@ -10,7 +10,9 @@ FormatBar::FormatBar(QWidget *parent)
     m_toolbar = new QToolBar(this);
     m_toolbar->setIconSize(QSize(28, 28));
     m_toolbar->setToolButtonStyle(Qt::ToolButtonIconOnly);
-    m_toolbar->setContentsMargins(8, 4, 8, 4);
+    // Increase margins around the toolbar for a more balanced look
+    m_toolbar->setContentsMargins(10, 6, 10, 6);
+    m_toolbar->setStyleSheet("QToolButton { margin: 4px; padding: 4px; }");
     
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->setContentsMargins(4, 4, 4, 4);
@@ -101,4 +103,4 @@ FormatBar::FormatBar(QWidget *parent)
     m_alignJustifyButton->setCheckable(true);
     m_alignJustifyButton->setIconSize(QSize(24, 24));
     m_toolbar->addWidget(m_alignJustifyButton);
-} 
+}

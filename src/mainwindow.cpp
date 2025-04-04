@@ -66,18 +66,17 @@ MainWindow::~MainWindow()
 
 void MainWindow::setupUI()
 {
-    resize(1024, 768);
+    resize(1024, 768);// slightly smaller overall window for compact design
+    // Improve menu bar spacing and add a subtle bold and padding for better visual appeal
+    menuBar()->setStyleSheet("QMenuBar::item { margin-right: 10px; padding: 6px; font-weight: bold; }");;
     
-    // Improve menu bar spacing
-    menuBar()->setStyleSheet("QMenuBar::item { margin-right: 10px; }");
-    
-    // Set toolbar area spacing
+    // Update main window style for separators and status bar with a modern look
     setStyleSheet(
-        "QMainWindow::separator { width: 6px; height: 6px; }"
-        "QStatusBar::item { border: none; }"
+        "QMainWindow::separator { width: 8px; height: 8px; background: #dcdcdc; }"
+        "QStatusBar { background: #f0f0f0; border-top: 1px solid #ccc; }"dding: 1px; }"
+        "QStatusBar::item { border: none; padding: 2px 4px; }"
     );
     
-    // Allow toolbar icon text to wrap onto multiple lines if needed
     setToolButtonStyle(Qt::ToolButtonIconOnly);
 }
 
@@ -248,19 +247,19 @@ void MainWindow::createMenus()
 
 void MainWindow::createToolbars()
 {
-    // Set spacing between toolbars
-    setToolButtonStyle(Qt::ToolButtonIconOnly); // Show only icons, no text
+    // Use compact icon size and reduced spacing
+    setToolButtonStyle(Qt::ToolButtonIconOnly);
     
-    // File Toolbar
+    // File Toolbar - reduce icon size for compactness
     m_fileToolBar = addToolBar(tr("File"));
-    m_fileToolBar->setIconSize(QSize(28, 28)); // Increase icon size further
+    m_fileToolBar->setIconSize(QSize(24, 24)); // smaller iconsct design
     m_fileToolBar->setMovable(true);
     m_fileToolBar->setFloatable(true);
     m_fileToolBar->setAllowedAreas(Qt::AllToolBarAreas);
     
-    // Add spacing between toolbar items
+    // Use a tighter spacer
     QWidget* fileToolbarSpacer = new QWidget(m_fileToolBar);
-    fileToolbarSpacer->setMinimumWidth(8);
+    fileToolbarSpacer->setMinimumWidth(4); // Reduce spacer width
     
     m_fileToolBar->addAction(m_newAction);
     m_fileToolBar->addWidget(fileToolbarSpacer);
@@ -270,7 +269,7 @@ void MainWindow::createToolbars()
     
     // Edit Toolbar
     m_editToolBar = addToolBar(tr("Edit"));
-    m_editToolBar->setIconSize(QSize(28, 28));
+    m_editToolBar->setIconSize(QSize(24, 24)); // Reduce icon size for compact design
     m_editToolBar->setMovable(true);
     m_editToolBar->setFloatable(true);
     m_editToolBar->setAllowedAreas(Qt::AllToolBarAreas);
@@ -284,7 +283,7 @@ void MainWindow::createToolbars()
     
     // Format Toolbar
     m_formatToolBar = addToolBar(tr("Format"));
-    m_formatToolBar->setIconSize(QSize(28, 28));
+    m_formatToolBar->setIconSize(QSize(24, 24)); // Reduce icon size for compact design
     m_formatToolBar->setMovable(true);
     m_formatToolBar->setFloatable(true);
     m_formatToolBar->setAllowedAreas(Qt::AllToolBarAreas);
@@ -299,20 +298,20 @@ void MainWindow::createToolbars()
     m_formatToolBar->addAction(m_alignRightAction);
     m_formatToolBar->addAction(m_alignJustifyAction);
     
-    // Font combo box - increase width for better visibility
+    // Font combo box with reduced width for a compact UI
     QFontComboBox *fontComboBox = new QFontComboBox(m_formatToolBar);
-    fontComboBox->setMinimumWidth(180);
+    fontComboBox->setMinimumWidth(140); // Reduce width
     m_formatToolBar->addWidget(fontComboBox);
     
-    // Add a spacer
+    // Compact spacer between widgets
     QWidget* spacer = new QWidget(m_formatToolBar);
-    spacer->setMinimumWidth(10);
+    spacer->setMinimumWidth(4);// Reduce spacer width
     m_formatToolBar->addWidget(spacer);
     
-    // Font size combo box
+    // Font size combo box with reduced minimum width
     QComboBox *fontSizeComboBox = new QComboBox(m_formatToolBar);
     fontSizeComboBox->setEditable(true);
-    fontSizeComboBox->setMinimumWidth(70);
+    fontSizeComboBox->setMinimumWidth(50); // Reduce width
     QStringList sizes;
     for (int i = 8; i <= 72; i += 2) {
         sizes.append(QString::number(i));
@@ -937,4 +936,4 @@ void MainWindow::documentProperties()
             }
         }
     }
-} 
+}
