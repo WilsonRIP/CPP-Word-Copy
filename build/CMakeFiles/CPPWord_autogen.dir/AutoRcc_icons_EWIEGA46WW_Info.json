@@ -1,0 +1,22 @@
+{
+	"BUILD_DIR" : "/Users/luke/C++ Word Copy/build/CPPWord_autogen",
+	"CMAKE_BINARY_DIR" : "/Users/luke/C++ Word Copy/build",
+	"CMAKE_CURRENT_BINARY_DIR" : "/Users/luke/C++ Word Copy/build",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/Users/luke/C++ Word Copy",
+	"CMAKE_SOURCE_DIR" : "/Users/luke/C++ Word Copy",
+	"CROSS_CONFIG" : false,
+	"GENERATOR" : "Unix Makefiles",
+	"INCLUDE_DIR" : "/Users/luke/C++ Word Copy/build/CPPWord_autogen/include",
+	"INPUTS" : [ "/Users/luke/C++ Word Copy/icons/word.png" ],
+	"LOCK_FILE" : "/Users/luke/C++ Word Copy/build/CMakeFiles/CPPWord_autogen.dir/AutoRcc_icons_EWIEGA46WW_Lock.lock",
+	"MULTI_CONFIG" : false,
+	"OPTIONS" : [ "-name", "icons" ],
+	"OUTPUT_CHECKSUM" : "EWIEGA46WW",
+	"OUTPUT_NAME" : "qrc_icons.cpp",
+	"RCC_EXECUTABLE" : "/usr/local/share/qt/libexec/rcc",
+	"RCC_LIST_OPTIONS" : [ "--list" ],
+	"SETTINGS_FILE" : "/Users/luke/C++ Word Copy/build/CMakeFiles/CPPWord_autogen.dir/AutoRcc_icons_EWIEGA46WW_Used.txt",
+	"SOURCE" : "/Users/luke/C++ Word Copy/icons.qrc",
+	"USE_BETTER_GRAPH" : true,
+	"VERBOSITY" : 0
+}

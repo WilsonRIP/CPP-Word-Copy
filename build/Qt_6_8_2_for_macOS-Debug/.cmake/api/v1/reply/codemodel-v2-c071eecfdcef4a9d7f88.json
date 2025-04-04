@@ -1,0 +1,78 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "CPPWord",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "CPPWord::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-CPPWord-Debug-35b0ef76098eb72aa544.json",
+					"name" : "CPPWord",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "CPPWord_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-CPPWord_autogen-Debug-657352c40ba27c4536c6.json",
+					"name" : "CPPWord_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "CPPWord_autogen_timestamp_deps::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-CPPWord_autogen_timestamp_deps-Debug-722a22f0498db3ddce17.json",
+					"name" : "CPPWord_autogen_timestamp_deps",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/Users/luke/C++ Word Copy/build/Qt_6_8_2_for_macOS-Debug",
+		"source" : "/Users/luke/C++ Word Copy"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}
