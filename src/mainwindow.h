@@ -16,6 +16,7 @@
 class TextEditor;
 class FormatBar;
 class QCloseEvent;
+class DocumentManager;
 
 class MainWindow : public QMainWindow
 {
@@ -33,6 +34,7 @@ private slots:
     bool saveAsDocument();
     void printDocument();
     void printPreviewDialog();
+    void documentProperties();
     
     // Edit operations
     void cutText();
@@ -53,6 +55,10 @@ private slots:
     void zoomOut();
     void resetZoom();
 
+    // Recovery
+    void checkForRecoveryFiles();
+    bool recoverDocument(const QString &filePath);
+
 private:
     void setupUI();
     void createActions();
@@ -71,6 +77,7 @@ private:
 
     TextEditor *m_textEditor;
     FormatBar *m_formatBar;
+    DocumentManager *m_documentManager;
     
     // Menus
     QMenu *m_fileMenu;
@@ -91,6 +98,7 @@ private:
     QAction *m_saveAsAction;
     QAction *m_printAction;
     QAction *m_printPreviewAction;
+    QAction *m_documentPropertiesAction;
     QAction *m_exitAction;
     
     QAction *m_undoAction;

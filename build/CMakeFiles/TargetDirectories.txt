@@ -1,5 +1,0 @@
-/Users/luke/C++ Word Copy/build/CMakeFiles/CPPWord.dir
-/Users/luke/C++ Word Copy/build/CMakeFiles/edit_cache.dir
-/Users/luke/C++ Word Copy/build/CMakeFiles/rebuild_cache.dir
-/Users/luke/C++ Word Copy/build/CMakeFiles/CPPWord_autogen_timestamp_deps.dir
-/Users/luke/C++ Word Copy/build/CMakeFiles/CPPWord_autogen.dir

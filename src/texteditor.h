@@ -17,6 +17,10 @@ public:
     QColor textColor() const;
     void resetZoom();
     
+protected:
+    // Override keyPressEvent to handle exceptions
+    void keyPressEvent(QKeyEvent *event) override;
+    
 private:
     float m_zoomFactor;
 };

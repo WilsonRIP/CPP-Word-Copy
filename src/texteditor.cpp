@@ -4,6 +4,8 @@
 #include <QTextBlock>
 #include <QTextList>
 #include <QDebug>
+#include <QApplication>
+#include <QKeyEvent>
 
 TextEditor::TextEditor(QWidget *parent)
     : QTextEdit(parent)
@@ -18,43 +20,94 @@ TextEditor::TextEditor(QWidget *parent)
     document()->setDefaultFont(QFont("Arial", 12));
     document()->setDocumentMargin(10);
     
-    // Connect the cursor position changed signal to parent for updating UI
-    connect(this, &QTextEdit::cursorPositionChanged, this, &TextEditor::cursorPositionChanged);
+    // Remove the problematic connection that causes infinite recursion
+    // The TextEdit's cursorPositionChanged signal is being connected to itself
+    // This was causing stack overflow
 }
 
 void TextEditor::mergeFormatOnWordOrSelection(const QTextCharFormat &format)
 {
-    QTextCursor cursor = textCursor();
-    if (!cursor.hasSelection()) {
-        cursor.select(QTextCursor::WordUnderCursor);
+    // Add error checking to prevent crashes
+    try {
+        QTextCursor cursor = textCursor();
+        if (!cursor.isNull()) {
+            if (!cursor.hasSelection()) {
+                cursor.select(QTextCursor::WordUnderCursor);
+            }
+            cursor.mergeCharFormat(format);
+            setTextCursor(cursor);
+        }
+    } catch (const std::exception& e) {
+        qDebug() << "Exception in mergeFormatOnWordOrSelection:" << e.what();
     }
-    cursor.mergeCharFormat(format);
-    setTextCursor(cursor);
 }
 
 void TextEditor::setAlignment(Qt::Alignment alignment)
 {
-    QTextCursor cursor = textCursor();
-    QTextBlockFormat blockFormat = cursor.blockFormat();
-    blockFormat.setAlignment(alignment);
-    
-    cursor.beginEditBlock();
-    cursor.mergeBlockFormat(blockFormat);
-    cursor.endEditBlock();
+    try {
+        QTextCursor cursor = textCursor();
+        if (cursor.isNull()) {
+            return;
+        }
+        
+        QTextBlockFormat blockFormat = cursor.blockFormat();
+        blockFormat.setAlignment(alignment);
+        
+        cursor.beginEditBlock();
+        cursor.mergeBlockFormat(blockFormat);
+        cursor.endEditBlock();
+    } catch (const std::exception& e) {
+        qDebug() << "Exception in setAlignment:" << e.what();
+    }
 }
 
 Qt::Alignment TextEditor::alignment() const
 {
-    return textCursor().blockFormat().alignment();
+    try {
+        QTextCursor cursor = textCursor();
+        if (!cursor.isNull()) {
+            return cursor.blockFormat().alignment();
+        }
+    } catch (const std::exception& e) {
+        qDebug() << "Exception in alignment:" << e.what();
+    }
+    
+    // Default alignment if we can't get it
+    return Qt::AlignLeft;
 }
 
 QColor TextEditor::textColor() const
 {
-    return textCursor().charFormat().foreground().color();
+    try {
+        QTextCursor cursor = textCursor();
+        if (!cursor.isNull()) {
+            return cursor.charFormat().foreground().color();
+        }
+    } catch (const std::exception& e) {
+        qDebug() << "Exception in textColor:" << e.what();
+    }
+    
+    // Default color if we can't get it
+    return QColor(Qt::black);
 }
 
 void TextEditor::resetZoom()
 {
     m_zoomFactor = 1.0;
     zoomIn(0); // Reset zoom 
+}
+
+// Override keyPressEvent to catch and handle exceptions during typing
+void TextEditor::keyPressEvent(QKeyEvent *event)
+{
+    try {
+        // Call the base class implementation
+        QTextEdit::keyPressEvent(event);
+    } catch (const std::exception& e) {
+        qDebug() << "Exception in keyPressEvent:" << e.what();
+        event->accept(); // Mark the event as handled
+    } catch (...) {
+        qDebug() << "Unknown exception in keyPressEvent";
+        event->accept(); // Mark the event as handled
+    }
 } 

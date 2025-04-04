@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "texteditor.h"
 #include "formatbar.h"
+#include "documentmanager.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -15,11 +16,31 @@
 #include <QLabel>
 #include <QRegularExpression>
 #include <QFileInfo>
+#include <QInputDialog>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QTableWidget>
+#include <QHeaderView>
+#include <QPushButton>
+#include <QStandardPaths>
+#include <QDir>
+#include <QAction>
+#include <QApplication>
+#include <QComboBox>
+#include <QFontComboBox>
+#include <QMenuBar>
+#include <QPrinter>
+#include <QSettings>
+#include <QStatusBar>
+#include <QStringConverter>
+#include <QToolBar>
+#include <QTextEdit>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_textEditor(new TextEditor(this))
     , m_formatBar(new FormatBar(this))
+    , m_documentManager(new DocumentManager(this))
     , m_currentFile("")
 {
     setupUI();
@@ -33,6 +54,9 @@ MainWindow::MainWindow(QWidget *parent)
     
     setCentralWidget(m_textEditor);
     setWindowIcon(QIcon(":/icons/word.png"));
+    
+    // Check for recovery files on startup
+    checkForRecoveryFiles();
 }
 
 MainWindow::~MainWindow()
@@ -43,6 +67,18 @@ MainWindow::~MainWindow()
 void MainWindow::setupUI()
 {
     resize(1024, 768);
+    
+    // Improve menu bar spacing
+    menuBar()->setStyleSheet("QMenuBar::item { margin-right: 10px; }");
+    
+    // Set toolbar area spacing
+    setStyleSheet(
+        "QMainWindow::separator { width: 6px; height: 6px; }"
+        "QStatusBar::item { border: none; }"
+    );
+    
+    // Allow toolbar icon text to wrap onto multiple lines if needed
+    setToolButtonStyle(Qt::ToolButtonIconOnly);
 }
 
 void MainWindow::createActions()
@@ -70,6 +106,9 @@ void MainWindow::createActions()
     
     m_printPreviewAction = new QAction(QIcon::fromTheme("document-print-preview"), tr("Print Preview..."), this);
     m_printPreviewAction->setStatusTip(tr("Preview the document before printing"));
+    
+    m_documentPropertiesAction = new QAction(QIcon::fromTheme("document-properties"), tr("Document Proper&ties..."), this);
+    m_documentPropertiesAction->setStatusTip(tr("View and edit document properties"));
     
     m_exitAction = new QAction(QIcon::fromTheme("application-exit"), tr("E&xit"), this);
     m_exitAction->setShortcut(QKeySequence::Quit);
@@ -146,6 +185,10 @@ void MainWindow::createActions()
 
 void MainWindow::createMenus()
 {
+    // Set menu bar spacing
+    menuBar()->setDefaultUp(false);
+    menuBar()->setNativeMenuBar(false); // Use non-native menu bar for consistent styling
+    
     // File Menu
     m_fileMenu = menuBar()->addMenu(tr("&File"));
     m_fileMenu->addAction(m_newAction);
@@ -157,7 +200,14 @@ void MainWindow::createMenus()
     m_fileMenu->addAction(m_printAction);
     m_fileMenu->addAction(m_printPreviewAction);
     m_fileMenu->addSeparator();
+    m_fileMenu->addAction(m_documentPropertiesAction);
+    m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_exitAction);
+    
+    // Add spacing widget between File and Edit
+    QWidget* menuSpacer1 = new QWidget(this);
+    menuSpacer1->setFixedWidth(10);
+    menuBar()->setCornerWidget(menuSpacer1, Qt::TopLeftCorner);
     
     // Edit Menu
     m_editMenu = menuBar()->addMenu(tr("&Edit"));
@@ -198,15 +248,33 @@ void MainWindow::createMenus()
 
 void MainWindow::createToolbars()
 {
+    // Set spacing between toolbars
+    setToolButtonStyle(Qt::ToolButtonIconOnly); // Show only icons, no text
+    
     // File Toolbar
     m_fileToolBar = addToolBar(tr("File"));
+    m_fileToolBar->setIconSize(QSize(28, 28)); // Increase icon size further
+    m_fileToolBar->setMovable(true);
+    m_fileToolBar->setFloatable(true);
+    m_fileToolBar->setAllowedAreas(Qt::AllToolBarAreas);
+    
+    // Add spacing between toolbar items
+    QWidget* fileToolbarSpacer = new QWidget(m_fileToolBar);
+    fileToolbarSpacer->setMinimumWidth(8);
+    
     m_fileToolBar->addAction(m_newAction);
+    m_fileToolBar->addWidget(fileToolbarSpacer);
     m_fileToolBar->addAction(m_openAction);
     m_fileToolBar->addAction(m_saveAction);
     m_fileToolBar->addAction(m_printAction);
     
     // Edit Toolbar
     m_editToolBar = addToolBar(tr("Edit"));
+    m_editToolBar->setIconSize(QSize(28, 28));
+    m_editToolBar->setMovable(true);
+    m_editToolBar->setFloatable(true);
+    m_editToolBar->setAllowedAreas(Qt::AllToolBarAreas);
+    
     m_editToolBar->addAction(m_undoAction);
     m_editToolBar->addAction(m_redoAction);
     m_editToolBar->addSeparator();
@@ -216,6 +284,11 @@ void MainWindow::createToolbars()
     
     // Format Toolbar
     m_formatToolBar = addToolBar(tr("Format"));
+    m_formatToolBar->setIconSize(QSize(28, 28));
+    m_formatToolBar->setMovable(true);
+    m_formatToolBar->setFloatable(true);
+    m_formatToolBar->setAllowedAreas(Qt::AllToolBarAreas);
+    
     m_formatToolBar->addAction(m_boldAction);
     m_formatToolBar->addAction(m_italicAction);
     m_formatToolBar->addAction(m_underlineAction);
@@ -226,13 +299,20 @@ void MainWindow::createToolbars()
     m_formatToolBar->addAction(m_alignRightAction);
     m_formatToolBar->addAction(m_alignJustifyAction);
     
-    // Font combo box
+    // Font combo box - increase width for better visibility
     QFontComboBox *fontComboBox = new QFontComboBox(m_formatToolBar);
+    fontComboBox->setMinimumWidth(180);
     m_formatToolBar->addWidget(fontComboBox);
+    
+    // Add a spacer
+    QWidget* spacer = new QWidget(m_formatToolBar);
+    spacer->setMinimumWidth(10);
+    m_formatToolBar->addWidget(spacer);
     
     // Font size combo box
     QComboBox *fontSizeComboBox = new QComboBox(m_formatToolBar);
     fontSizeComboBox->setEditable(true);
+    fontSizeComboBox->setMinimumWidth(70);
     QStringList sizes;
     for (int i = 8; i <= 72; i += 2) {
         sizes.append(QString::number(i));
@@ -264,6 +344,7 @@ void MainWindow::setupConnections()
     connect(m_saveAsAction, &QAction::triggered, this, &MainWindow::saveAsDocument);
     connect(m_printAction, &QAction::triggered, this, &MainWindow::printDocument);
     connect(m_printPreviewAction, &QAction::triggered, this, &MainWindow::printPreviewDialog);
+    connect(m_documentPropertiesAction, &QAction::triggered, this, &MainWindow::documentProperties);
     connect(m_exitAction, &QAction::triggered, this, &QWidget::close);
 
     // Edit actions
@@ -317,7 +398,7 @@ void MainWindow::setupConnections()
     connect(m_resetZoomAction, &QAction::triggered, this, &MainWindow::resetZoom);
     
     // Text editor connections for updating UI
-    connect(m_textEditor, &TextEditor::cursorPositionChanged, [this]() {
+    connect(m_textEditor, &QTextEdit::cursorPositionChanged, [this]() {
         QTextCursor cursor = m_textEditor->textCursor();
         QTextCharFormat fmt = cursor.charFormat();
         
@@ -391,6 +472,9 @@ void MainWindow::newDocument()
         m_currentFile.clear();
         updateWindowTitle();
         m_textEditor->document()->setModified(false);
+        
+        // Stop auto-save
+        m_documentManager->stopAutoSave();
     }
 }
 
@@ -398,16 +482,17 @@ void MainWindow::openDocument()
 {
     if (maybeSave()) {
         QString fileName = QFileDialog::getOpenFileName(this, tr("Open Document"), "",
-                           tr("HTML Documents (*.html *.htm);;Text Documents (*.txt);;Rich Text Documents (*.rtf);;All Files (*)"));
+                           tr("All Supported Files (*.txt *.html *.htm *.rtf);;Text Documents (*.txt);;HTML Documents (*.html *.htm);;Rich Text Documents (*.rtf);;All Files (*)"));
         
         if (!fileName.isEmpty()) {
             QFile file(fileName);
             if (file.open(QFile::ReadOnly | QFile::Text)) {
                 QTextStream in(&file);
+                in.setEncoding(QStringConverter::Utf8);
                 
-                if (fileName.endsWith(".html") || fileName.endsWith(".htm")) {
+                if (fileName.endsWith(".html", Qt::CaseInsensitive) || fileName.endsWith(".htm", Qt::CaseInsensitive)) {
                     m_textEditor->setHtml(in.readAll());
-                } else if (fileName.endsWith(".rtf")) {
+                } else if (fileName.endsWith(".rtf", Qt::CaseInsensitive)) {
                     m_textEditor->setHtml(in.readAll());
                 } else {
                     m_textEditor->setPlainText(in.readAll());
@@ -417,7 +502,15 @@ void MainWindow::openDocument()
                 m_currentFile = fileName;
                 updateWindowTitle();
                 m_textEditor->document()->setModified(false);
+                
+                // Start auto-save for crash recovery
+                m_documentManager->startAutoSave(m_textEditor->document(), m_currentFile);
+                
                 statusBar()->showMessage(tr("File loaded"), 2000);
+            } else {
+                QMessageBox::warning(this, tr("Open Error"),
+                                   tr("Could not open file %1: %2")
+                                   .arg(fileName, file.errorString()));
             }
         }
     }
@@ -429,19 +522,27 @@ bool MainWindow::saveDocument()
         return saveAsDocument();
     }
     
-    QTextDocumentWriter writer(m_currentFile);
+    // Determine the file format
+    QString format;
+    if (m_currentFile.endsWith(".html", Qt::CaseInsensitive) || m_currentFile.endsWith(".htm", Qt::CaseInsensitive)) {
+        format = "html";
+    } else if (m_currentFile.endsWith(".rtf", Qt::CaseInsensitive)) {
+        format = "rtf";
+    } else {
+        format = "txt";
+    }
+    
     bool success = false;
     
-    if (m_currentFile.endsWith(".html") || m_currentFile.endsWith(".htm")) {
-        writer.setFormat("html");
-        success = writer.write(m_textEditor->document());
-    } else if (m_currentFile.endsWith(".rtf")) {
-        writer.setFormat("rtf");
+    if (format == "html" || format == "rtf") {
+        QTextDocumentWriter writer(m_currentFile);
+        writer.setFormat(format.toUtf8());
         success = writer.write(m_textEditor->document());
     } else {
         QFile file(m_currentFile);
         if (file.open(QFile::WriteOnly | QFile::Text)) {
             QTextStream out(&file);
+            out.setEncoding(QStringConverter::Utf8);
             out << m_textEditor->toPlainText();
             success = true;
             file.close();
@@ -451,6 +552,13 @@ bool MainWindow::saveDocument()
     if (success) {
         m_textEditor->document()->setModified(false);
         statusBar()->showMessage(tr("File saved"), 2000);
+        
+        // Update auto-save
+        m_documentManager->startAutoSave(m_textEditor->document(), m_currentFile);
+    } else {
+        QMessageBox::warning(this, tr("Save Error"),
+                           tr("Could not save file %1")
+                           .arg(m_currentFile));
     }
     
     return success;
@@ -459,10 +567,16 @@ bool MainWindow::saveDocument()
 bool MainWindow::saveAsDocument()
 {
     QString fileName = QFileDialog::getSaveFileName(this, tr("Save As"), "",
-                        tr("HTML Documents (*.html *.htm);;Text Documents (*.txt);;Rich Text Documents (*.rtf)"));
+                        tr("Text Documents (*.txt);;HTML Documents (*.html *.htm);;Rich Text Documents (*.rtf);;All Files (*)"));
     
     if (fileName.isEmpty()) {
         return false;
+    }
+    
+    // Add extension if not present
+    QFileInfo fileInfo(fileName);
+    if (fileInfo.suffix().isEmpty()) {
+        fileName += ".txt"; // Default to .txt
     }
     
     m_currentFile = fileName;
@@ -601,9 +715,226 @@ void MainWindow::resetZoom()
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     if (maybeSave()) {
+        // Stop auto-save and clean up
+        m_documentManager->stopAutoSave();
+        
+        // Save current settings
         saveSettings();
+        
         event->accept();
     } else {
         event->ignore();
+    }
+}
+
+void MainWindow::checkForRecoveryFiles()
+{
+    QStringList recoveryFiles = m_documentManager->pendingRecoveryFiles();
+    
+    if (recoveryFiles.isEmpty()) {
+        return;
+    }
+    
+    QMessageBox msgBox(this);
+    msgBox.setIcon(QMessageBox::Question);
+    msgBox.setWindowTitle(tr("Document Recovery"));
+    msgBox.setText(tr("The application was not closed properly last time."));
+    msgBox.setInformativeText(tr("Would you like to recover unsaved documents?"));
+    QPushButton *recoverButton = msgBox.addButton(tr("Recover"), QMessageBox::ActionRole);
+    msgBox.addButton(tr("Discard"), QMessageBox::RejectRole);
+    
+    msgBox.exec();
+    
+    if (msgBox.clickedButton() == recoverButton) {
+        if (recoveryFiles.size() == 1) {
+            recoverDocument(recoveryFiles.first());
+        } else {
+            // If there are multiple recovery files, let user choose
+            QStringList items;
+            for (const QString &file : recoveryFiles) {
+                QFileInfo fileInfo(file);
+                items << fileInfo.fileName();
+            }
+            
+            bool ok;
+            QString item = QInputDialog::getItem(this, tr("Select Document to Recover"),
+                                               tr("Document:"), items, 0, false, &ok);
+            if (ok && !item.isEmpty()) {
+                int index = items.indexOf(item);
+                if (index >= 0 && index < recoveryFiles.size()) {
+                    recoverDocument(recoveryFiles.at(index));
+                }
+            }
+        }
+    } else {
+        // Discard all recovery files
+        for (const QString &file : recoveryFiles) {
+            m_documentManager->clearRecoveryFile(file);
+        }
+    }
+}
+
+bool MainWindow::recoverDocument(const QString &filePath)
+{
+    if (m_documentManager->hasRecoveryFile(filePath)) {
+        if (maybeSave()) {
+            bool recovered = m_documentManager->recoverDocument(m_textEditor->document(), filePath);
+            
+            if (recovered) {
+                m_currentFile = filePath;
+                updateWindowTitle();
+                m_textEditor->document()->setModified(true);
+                
+                // Start auto-save for this document
+                m_documentManager->startAutoSave(m_textEditor->document(), m_currentFile);
+                
+                // Clear the recovery file
+                m_documentManager->clearRecoveryFile(filePath);
+                
+                statusBar()->showMessage(tr("Document recovered"), 2000);
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
+void MainWindow::documentProperties()
+{
+    if (m_currentFile.isEmpty()) {
+        QMessageBox::information(this, tr("Document Properties"), 
+                                tr("Please save the document first."));
+        return;
+    }
+    
+    // Create a dialog for document properties
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("Document Properties"));
+    dialog.resize(400, 300);
+    
+    QVBoxLayout *layout = new QVBoxLayout(&dialog);
+    
+    // Create a table widget for properties
+    QTableWidget *tableWidget = new QTableWidget(&dialog);
+    tableWidget->setColumnCount(2);
+    tableWidget->setHorizontalHeaderLabels({tr("Property"), tr("Value")});
+    tableWidget->horizontalHeader()->setStretchLastSection(true);
+    
+    // Get current properties
+    QMap<QString, QVariant> properties = m_documentManager->allProperties();
+    
+    // Add system properties
+    QFileInfo fileInfo(m_currentFile);
+    properties["File Name"] = fileInfo.fileName();
+    properties["File Path"] = fileInfo.absolutePath();
+    properties["Size"] = QString::number(fileInfo.size()) + " bytes";
+    properties["Created"] = fileInfo.birthTime().toString();
+    properties["Modified"] = fileInfo.lastModified().toString();
+    
+    // Populate the table
+    tableWidget->setRowCount(properties.size());
+    int row = 0;
+    for (auto it = properties.constBegin(); it != properties.constEnd(); ++it, ++row) {
+        tableWidget->setItem(row, 0, new QTableWidgetItem(it.key()));
+        tableWidget->setItem(row, 1, new QTableWidgetItem(it.value().toString()));
+    }
+    
+    layout->addWidget(tableWidget);
+    
+    // Add custom property section
+    QHBoxLayout *addPropLayout = new QHBoxLayout();
+    QLabel *propLabel = new QLabel(tr("Add Property:"), &dialog);
+    QLineEdit *propNameEdit = new QLineEdit(&dialog);
+    QLineEdit *propValueEdit = new QLineEdit(&dialog);
+    QPushButton *addButton = new QPushButton(tr("Add"), &dialog);
+    
+    addPropLayout->addWidget(propLabel);
+    addPropLayout->addWidget(propNameEdit);
+    addPropLayout->addWidget(propValueEdit);
+    addPropLayout->addWidget(addButton);
+    
+    layout->addLayout(addPropLayout);
+    
+    // Add remove property button
+    QPushButton *removeButton = new QPushButton(tr("Remove Selected Property"), &dialog);
+    layout->addWidget(removeButton);
+    
+    // Add standard dialog buttons
+    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    layout->addWidget(buttonBox);
+    
+    // Connect signals/slots
+    connect(addButton, &QPushButton::clicked, [&]() {
+        QString name = propNameEdit->text().trimmed();
+        QString value = propValueEdit->text().trimmed();
+        
+        if (!name.isEmpty()) {
+            // Skip system properties
+            QStringList systemProps = {"File Name", "File Path", "Size", "Created", "Modified"};
+            if (systemProps.contains(name)) {
+                QMessageBox::warning(&dialog, tr("Invalid Property"), 
+                                    tr("Cannot add or modify system properties."));
+                return;
+            }
+            
+            // Add to the table
+            bool found = false;
+            for (int i = 0; i < tableWidget->rowCount(); ++i) {
+                if (tableWidget->item(i, 0)->text() == name) {
+                    tableWidget->item(i, 1)->setText(value);
+                    found = true;
+                    break;
+                }
+            }
+            
+            if (!found) {
+                int row = tableWidget->rowCount();
+                tableWidget->setRowCount(row + 1);
+                tableWidget->setItem(row, 0, new QTableWidgetItem(name));
+                tableWidget->setItem(row, 1, new QTableWidgetItem(value));
+            }
+            
+            propNameEdit->clear();
+            propValueEdit->clear();
+        }
+    });
+    
+    connect(removeButton, &QPushButton::clicked, [&]() {
+        int currentRow = tableWidget->currentRow();
+        if (currentRow >= 0) {
+            QString propName = tableWidget->item(currentRow, 0)->text();
+            
+            // Skip system properties
+            QStringList systemProps = {"File Name", "File Path", "Size", "Created", "Modified"};
+            if (systemProps.contains(propName)) {
+                QMessageBox::warning(&dialog, tr("Invalid Operation"), 
+                                    tr("Cannot remove system properties."));
+                return;
+            }
+            
+            tableWidget->removeRow(currentRow);
+        }
+    });
+    
+    connect(buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    
+    // Show the dialog
+    if (dialog.exec() == QDialog::Accepted) {
+        // Save the properties
+        m_documentManager->clearProperties();
+        
+        // Skip system properties when saving
+        QStringList systemProps = {"File Name", "File Path", "Size", "Created", "Modified"};
+        
+        for (int i = 0; i < tableWidget->rowCount(); ++i) {
+            QString name = tableWidget->item(i, 0)->text();
+            QString value = tableWidget->item(i, 1)->text();
+            
+            if (!systemProps.contains(name)) {
+                m_documentManager->setProperty(name, value);
+            }
+        }
     }
 } 
